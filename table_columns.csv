@@ -1,0 +1,4 @@
+habtype,data,landmark_col,landmark,offset,offset_span
+urban,hab,0,Block,1,2
+urban,ongoing,0,Block,0,4
+urban,proposed,0,District,0,5
