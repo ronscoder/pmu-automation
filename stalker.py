@@ -2,6 +2,7 @@ import os
 from saub.data_finder import WhatData
 from sensible import Give
 from utility import *
+import datetime
 class FileSniffer:
     def __init__(self):
         pass
@@ -10,7 +11,9 @@ class FileSniffer:
         """ Get all files in the path 
         Returns list of file paths
         """
-        path = path.strip().replace('\\', '') # will be a cross platform issue
+        path = path.strip()
+        pathe = path.split(os.sep)
+        # path = os.path.join(*pathe)
         
         print('Path exists: {}'.format(os.path.exists(path)))
         print('-{}-'.format(path))
@@ -21,31 +24,42 @@ class FileSniffer:
             # print('Files: ')
             for file in files:
                 # print(file)
-                all_files.append(os.path.join(path, file))
+                all_files.append(os.path.join(folderName, file))
         return all_files
     
     def build_butts(self, files):
+        ok = True
         all_butts = []
         for file in files:
             if(not WhatData.sentinel(file)):
+                print('skipping ' + file)
                 continue
             whatData = WhatData(file)
-            if(not whatData.error==None):
-                break    
+            if(len(whatData.error) > 0):
+                continue    
             all_butts.append(whatData)
-        return all_butts
+        return ok, all_butts
         
 
 
 if(__name__ == '__main__'):
-    stalker = FileSniffer()
-    files = stalker.all_files_in(input('Enter directory path: \n'))
-    all_butts = stalker.build_butts(files)
-    give = Give(all_butts)
-    hhTot = give.hh()
-    saveFilename = 'hh_totalism.xlsx'
-    info('Save directory for', saveFilename)
-    path = input('>> ')
-    saveFilepath = os.path.join(path + saveFilename)
-    hhTot.to_excel(saveFilepath)
-    
+    looping = ''
+    while(looping == ''):
+        stalker = FileSniffer()
+        files = stalker.all_files_in(input('Enter directory path: \n'))
+        # print(files)
+        ok, all_butts = stalker.build_butts(files)
+        if(ok):
+            give = Give(all_butts)
+            dfhhTot = give.hh()
+            path = 'x'
+            if(len(dfhhTot) > 0):
+                date = datetime.datetime.now()
+                saveFilename = 'hh_totalism-{}.xlsx'.format(date.timestamp())
+                dfhhTot.to_excel(saveFilename)
+                info('Save directory for', saveFilename) 
+                path = input('>> ')
+            if(not path == 'x'):
+                saveFilepath = os.path.join(path + saveFilename)
+                dfhhTot.to_excel(saveFilepath)
+            looping = input('Run again. Enter for yes: ')

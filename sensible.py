@@ -6,6 +6,7 @@ Created on Wed Mar 14 02:11:06 2018
 @author: ronsair
 """
 import pandas as pd
+from utility import *
 class Give:
     """
     Buttback format:
@@ -20,6 +21,7 @@ class Give:
         columns of interest:
             urban: hab_type = urban, read: town
         """
+        ok = True
         cols_urban = dict(
                 hh_total = 4,
                 hh_bal = 7,
@@ -42,6 +44,8 @@ class Give:
             if(butt.hab_type == 'rural'):
                 cols = cols_rural
                 
+            if(not ok):
+                return []
             habdf = butt.data[0]['data'] # Hoping its always the first, or it's bad butt
             sums = [habdf.iloc[:,col-1].sum() for col in cols.values()]
             data.append([butt.district, butt.block, butt.hab_type] + sums)

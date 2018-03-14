@@ -25,7 +25,7 @@ class WhatData():
         self.hab_type = 'unknown'
         self.filename = self.file.split(os.sep)[-1].lower()
         self.ext = self.filename.split('.')[-1].lower()
-        self.error = None
+        self.error = []
         self.data=[]
         self.squeezeButt()
         
@@ -40,15 +40,20 @@ class WhatData():
     
     def squeezeButt(self):
         if(self.filename[0]=='~'): # this is temp file
+            self.errorlog('Temp file. Skipped')
             return
         
         if(not (self.ext in ['xlsx', 'xlsm', 'xls'])):
+            self.errorlog('Not excel file. Skipped')
             return
         
         print('\n\n{}'.format(('='*30).center(30)))
         self.info('File name', self.filename)
         if(not self.is_urban()):
-            self.is_rural()
+            if(not self.is_rural()):
+                self.errorlog('Could not determine the file format')
+                return
+                
         
     def is_urban(self):
         if(not (self.filename.find('urban') > 0)):
@@ -99,16 +104,29 @@ class WhatData():
         self.xfile = pd.ExcelFile(self.file)
         sheets = self.xfile.book.sheets()
         for ix, sheet in enumerate(sheets):
-            if(sheet.visibility == 0):
-                self.data.append(self.extractSheetData(sheet.name))
+            # print('{:20} {} {}'.format(sheet.name, sheet.visibility, sheet.sheet_visible))
+            # continue
+            # if(sheet.visibility == 0):
+            ok, sheetdata = self.extractSheetData(sheet.name)
+            if(ok):
+                self.data.append(sheetdata)
         
     def extractSheetData(self, sheetname):
         print('\n')
-        self.info('Reading',sheetname)
+        self.info('Reading sheet',sheetname)
         #1 District name
         df = pd.read_excel(self.xfile, sheetname, index_col = None, header=None)
         result = {}
-        
+
+        allowed_sheetname = ['ongoing', 'town', 'proposed', 'habitat', 'existing']
+        valid = False
+        for name in allowed_sheetname:
+            if(not sheetname.lower().find(name) == -1):
+                valid = True
+                break
+        if(not valid):
+            self.info('Skipped','Hidden sheet')
+            return False,{}
         result['sheetname'] = sheetname
         
         # DISTRICT
@@ -116,7 +134,7 @@ class WhatData():
 
         if(df[row==True].empty):
             self.errorlog('District info (label) not found')
-            return        
+            return False, {}            
         self.district = df[row==True].iloc[0,1]
         result['district'] = df[row==True].iloc[0,1]
         self.info('District', self.district)
@@ -125,7 +143,7 @@ class WhatData():
         row = df[0].str.match('block', case=False)
         if(df[row==True].empty):
             self.errorlog('Block info (label) not found')
-            return        
+            return False, {}             
         self.block = df[row==True].iloc[0,1]
         result['block'] = df[row==True].iloc[0,1]
         self.info('Block', self.block)
@@ -137,7 +155,7 @@ class WhatData():
             row = df[0].str.match('1')
             if(df[row==True].empty):
                 self.errorlog('Datarow sl.no 1 info not found')
-                return        
+                return False, {}      
         self.first_record = df[row==True].iloc[0,:]
         self.info('First record sample\n','')
         print(self.first_record[0:4])
@@ -146,7 +164,7 @@ class WhatData():
         result['data'] = df.iloc[idx_data:]
         self.infraCategory()
 
-        return result
+        return True,result
 
         
     def infraCategory(self):
@@ -159,4 +177,4 @@ class WhatData():
         print(col.FAIL+ 'ERROR: ' + col.ENDC + col.WARNING + msg + col.ENDC)
 
     def info(self,label, msg = ''):
-        print(col.BOLD+ '{:20}: '.format(label) + col.ENDC + col.OKBLUE + msg + col.ENDC)
+        print(col.BOLD+ '{:20}: '.format(label) + col.ENDC + col.OKBLUE + str(msg) + col.ENDC)
