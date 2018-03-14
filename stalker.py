@@ -1,6 +1,6 @@
 import os
 from saub.data_finder import WhatData
-from sensible import Give
+from saub.sensible import Give
 from utility import *
 import datetime
 class FileSniffer:

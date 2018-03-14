@@ -27,6 +27,7 @@ class WhatData():
         self.ext = self.filename.split('.')[-1].lower()
         self.error = []
         self.data=[]
+        self.sheets = {processed:[], skipped:[]}
         self.squeezeButt()
         
     def sentinel(file):
