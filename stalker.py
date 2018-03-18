@@ -1,29 +1,23 @@
 import os
 from saub.data_finder import WhatData
-from saub.sensible import Give
 from utility import *
 import datetime
+import pickle
+from pathlib import Path
+
 class FileSniffer:
     def __init__(self):
-        pass
+        self.files = {'processed':[], 'skipped':[]}
+        self.sheets = []
     
     def all_files_in(self, path):
         """ Get all files in the path 
         Returns list of file paths
         """
-        path = path.strip()
-        pathe = path.split(os.sep)
-        # path = os.path.join(*pathe)
-        
-        print('Path exists: {}'.format(os.path.exists(path)))
-        print('-{}-'.format(path))
         all_files = []
 
         for folderName, folders, files in os.walk(path):
-            # print('Current folder: '.format(folderName))
-            # print('Files: ')
             for file in files:
-                # print(file)
                 all_files.append(os.path.join(folderName, file))
         return all_files
     
@@ -31,35 +25,33 @@ class FileSniffer:
         ok = True
         all_butts = []
         for file in files:
+            file = Path(file)
             if(not WhatData.sentinel(file)):
-                print('skipping ' + file)
+                print('skipping ' + file.name)
+                self.files['skipped'].append(file.name)
                 continue
-            whatData = WhatData(file)
-            if(len(whatData.error) > 0):
-                continue    
-            all_butts.append(whatData)
+            whatData = None
+            while(True):
+                whatData = WhatData(file)
+                if(not whatData.ok):
+                    info('\n{}\nFix the following error(s)\n{}'.format(*['#'*30]*2))
+                    info('File',file)
+                    for error in whatData.errors:
+                        errorlog(error, False)
+                    ans = action('Make correction')
+                    if(ans == 's'):
+                        info('Ignoring the errors...')
+                        break
+                else:
+                    self.files['processed'].append(file.name)
+                    self.sheets.append({'file': file.name, 'processed': whatData.sheets['processed'], 'skipped': whatData.sheets['skipped']})
+                    all_butts.append(whatData)
+                    break
+
+        printList('Files processed', self.files['processed'])
+        printList('Files skipped', self.files['skipped'])
+        # logcsv('files',pd.DataFrame(self.files))
+        # logcsv('sheets',pd.DataFrame(self.sheets))
+        for sheet in self.sheets:
+            printList('Sheets skipped [{}]'.format(sheet['file']), sheet['skipped'])
         return ok, all_butts
-        
-
-
-if(__name__ == '__main__'):
-    looping = ''
-    while(looping == ''):
-        stalker = FileSniffer()
-        files = stalker.all_files_in(input('Enter directory path: \n'))
-        # print(files)
-        ok, all_butts = stalker.build_butts(files)
-        if(ok):
-            give = Give(all_butts)
-            dfhhTot = give.hh()
-            path = 'x'
-            if(len(dfhhTot) > 0):
-                date = datetime.datetime.now()
-                saveFilename = 'hh_totalism-{}.xlsx'.format(date.timestamp())
-                dfhhTot.to_excel(saveFilename)
-                info('Save directory for', saveFilename) 
-                path = input('>> ')
-            if(not path == 'x'):
-                saveFilepath = os.path.join(path + saveFilename)
-                dfhhTot.to_excel(saveFilepath)
-            looping = input('Run again. Enter for yes: ')

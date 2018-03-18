@@ -1,2 +1,9 @@
 __pycache__/
 saub/__pycache__/
+log/*
+sample/*
+sample
+output
+publish
+states
+log.txt
